@@ -65,7 +65,7 @@ def findmusic(pages,musicStyle):
         pagenum = i*35      #计算num
         playListIds = getPlayListId(pagenum,musicStyle)    #获取歌单ID
         for playListId in playListIds:
-            print('正在歌单%s中获取符合规则的歌曲..' % playListId)
+            print('正在第%s页的歌单%s中获取符合规则的歌曲..' % (i+1,playListId))
             musics = getMusic(playListId)       #获取符合规则的music
             
 if __name__ == '__main__':
