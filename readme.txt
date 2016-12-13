@@ -1,3 +1,5 @@
+2016-12-13：findmusic函数中添加了对页面的监控
+
 该爬虫用来爬取网易云音乐《电子》风格热门歌单中的过万评的电音曲目
 某一风格歌单列表格式：'http://music.163.com/#/discover/playlist/?order=hot&cat=%E7%94%B5%E5%AD%90&limit=35&offset='
 cat后面的%E7%94%B5%E5%AD%90，是电子这一风格的代码。寻找其他风格把这个替换掉就可以。
