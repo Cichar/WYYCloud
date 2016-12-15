@@ -40,11 +40,14 @@ def compareMusic(musicIdList):
         time.sleep(0.5) #等待0.5秒，加载数据
         flags = driver.find_elements_by_xpath('//*[@id="cnt_comment_count"]')
         for flag in flags:
-            if int(flag.text) >= 10000:
-                print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'>=10000,符合条件.')
-                rightMusicList[musicId] = flag.text
-            else:
-                print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'<10000,不符合条件.')
+            try:
+                if int(flag.text) >= 10000:
+                    print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'>=10000,符合条件.')
+                    rightMusicList[musicId] = flag.text
+                else:
+                    print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'<10000,不符合条件.')
+            except ValueError:
+                print('无法验证歌曲ID：'+str(musicId)+'继续验证下一首')
     driver.quit()
     if len(rightMusicList) > 0:
         print('存在符合规则的歌曲，写入中..')
