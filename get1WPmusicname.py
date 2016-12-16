@@ -37,7 +37,7 @@ def compareMusic(musicIdList):
     for musicId in musicIdList:
         driver.get(base_url+str(musicId))
         driver.switch_to_frame('g_iframe')
-        time.sleep(0.5) #等待0.5秒，加载数据
+        time.sleep(0.2) #等待0.2秒，加载数据
         flags = driver.find_elements_by_xpath('//*[@id="cnt_comment_count"]')
         for flag in flags:
             try:
@@ -51,7 +51,7 @@ def compareMusic(musicIdList):
     driver.quit()
     if len(rightMusicList) > 0:
         print('存在符合规则的歌曲，写入中..')
-        csvFile = open('D:\Python练习\爬虫项目\爬取网易云歌单\music.csv','a',newline='') #csv文件在要存储的地方创建
+        csvFile = open('F:\Myspiders\music.csv','a',newline='') #csv文件在要存储的地方创建
         writer = csv.writer(csvFile)
         try:
             for music in rightMusicList:
