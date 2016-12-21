@@ -2,6 +2,12 @@ from selenium import webdriver
 import time
 import csv
 import os
+import threading
+import queue
+
+q = queue.Queue()
+lock = threading.Lock()
+rightMusicList = {}
 
 def getPlayListId(pagenum,musicStyle):
     driver = webdriver.PhantomJS()
@@ -17,6 +23,8 @@ def getPlayListId(pagenum,musicStyle):
     return playListId
 
 def getMusic(playListId):
+    global rightMusicList
+    global findedMusic
     driver = webdriver.PhantomJS()
     base_url = 'http://music.163.com/#/playlist?id='
     #获取传入歌单中的歌曲ID
@@ -24,34 +32,21 @@ def getMusic(playListId):
     driver.get(base_url+str(playListId))
     driver.switch_to_frame('g_iframe')
     ids = driver.find_elements_by_css_selector('a[href^=\/song]')
-    musicIdList = []
     for id in ids:
-        musicIdList.append(id.get_attribute('href')[29:])
+        mid = id.get_attribute('href')[29:]
+        q.put(mid)
     driver.quit()
-    return compareMusic(musicIdList)
-
-def compareMusic(musicIdList):
-    driver = webdriver.PhantomJS()
-    base_url = 'http://music.163.com/#/song?id='
-    rightMusicList = {}
-    for musicId in musicIdList:
-        driver.get(base_url+str(musicId))
-        driver.switch_to_frame('g_iframe')
-        time.sleep(0.2) #等待0.2秒，加载数据
-        flags = driver.find_elements_by_xpath('//*[@id="cnt_comment_count"]')
-        for flag in flags:
-            try:
-                if int(flag.text) >= 10000:
-                    print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'>=10000,符合条件.')
-                    rightMusicList[musicId] = flag.text
-                else:
-                    print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'<10000,不符合条件.')
-            except ValueError:
-                print('无法验证歌曲ID：'+str(musicId)+'继续验证下一首')
-    driver.quit()
+    ths = []
+    for i in range(3):
+        t = threading.Thread(target = compareMusic)
+        t.deamon = True
+        t.start()
+        ths.append(t)
+    for th in ths:
+        th.join()
     if len(rightMusicList) > 0:
         print('存在符合规则的歌曲，写入中..')
-        csvFile = open('F:\Myspiders\music.csv','a',newline='') #csv文件在要存储的地方创建
+        csvFile = open('F:\Myspiders\WYYCloud\music.csv','a',newline='') #csv文件在要存储的地方创建
         writer = csv.writer(csvFile)
         try:
             for music in rightMusicList:
@@ -61,7 +56,32 @@ def compareMusic(musicIdList):
         print('歌曲写入完毕，即将切换下一份歌单..')
     else:
         print('不存在符合规则的歌曲，即将切换下一份歌单')
-    print('-----------------------------------')  
+    print('-----------------------------------')
+
+def compareMusic():
+    global rightMusicList
+    driver = webdriver.PhantomJS()
+    base_url = 'http://music.163.com/#/song?id='
+    while not q.empty():
+        musicId = q.get()
+        driver.get(base_url+str(musicId))
+        driver.switch_to_frame('g_iframe')
+        time.sleep(0.2) #等待0.2秒，加载数据
+        flags = driver.find_elements_by_xpath('//*[@id="cnt_comment_count"]')
+        for flag in flags:
+            try:
+                if int(flag.text) >= 10000:
+                    lock.acquire()
+                    print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'>=10000,符合条件.')
+                    rightMusicList[musicId] = flag.text
+                    lock.release()
+                else:
+                    print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'<10000,不符合条件.')
+            except ValueError:
+                print('无法验证歌曲ID：'+str(musicId)+'继续验证下一首')
+            finally:
+                q.task_done()
+    driver.quit()  
     
 def findmusic(pages,musicStyle):  
     for i in range(pages):
