@@ -37,26 +37,16 @@ def getMusic(playListId):
         q.put(mid)
     driver.quit()
     ths = []
-    for i in range(3):
-        t = threading.Thread(target = compareMusic)
-        t.deamon = True
-        t.start()
-        ths.append(t)
-    for th in ths:
-        th.join()
-    if len(rightMusicList) > 0:
-        print('存在符合规则的歌曲，写入中..')
-        csvFile = open('F:\Myspiders\WYYCloud\music.csv','a',newline='') #csv文件在要存储的地方创建
-        writer = csv.writer(csvFile)
-        try:
-            for music in rightMusicList:
-                writer.writerow((music,rightMusicList[music]))
-        finally:
-            csvFile.close()
-        print('歌曲写入完毕，即将切换下一份歌单..')
-    else:
-        print('不存在符合规则的歌曲，即将切换下一份歌单')
-    print('-----------------------------------')
+    try:
+        for i in range(3):
+            t = threading.Thread(target = compareMusic)
+            t.deamon = True
+            t.start()
+            ths.append(t)
+        for th in ths:
+            th.join()
+    except Exception as e:
+        pass
 
 def compareMusic():
     global rightMusicList
@@ -66,22 +56,27 @@ def compareMusic():
         musicId = q.get()
         driver.get(base_url+str(musicId))
         driver.switch_to_frame('g_iframe')
-        time.sleep(0.2) #等待0.2秒，加载数据
+        time.sleep(0.3) #等待0.2秒，加载数据
         flags = driver.find_elements_by_xpath('//*[@id="cnt_comment_count"]')
         for flag in flags:
             try:
+                lock.acquire()
                 if int(flag.text) >= 10000:
-                    lock.acquire()
-                    print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'>=10000,符合条件.')
-                    rightMusicList[musicId] = flag.text
-                    lock.release()
+                    print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'>=10000,符合条件,写入文件')
+                    csvFile = open('F:\Myspiders\WYYCloud\music.csv','a',newline='') #csv文件在要存储的地方创建
+                    writer = csv.writer(csvFile)
+                    writer.writerow((musicId,flag.text))
+                    csvFile.close()
                 else:
                     print('验证歌曲ID：'+str(musicId)+',评论数：'+str(flag.text)+'<10000,不符合条件.')
             except ValueError:
                 print('无法验证歌曲ID：'+str(musicId)+'继续验证下一首')
             finally:
+                lock.release()
                 q.task_done()
-    driver.quit()  
+    driver.quit()        
+    print('歌曲执行完毕，即将切换下一份歌单..')
+    print('-----------------------------------')
     
 def findmusic(pages,musicStyle):  
     for i in range(pages):
