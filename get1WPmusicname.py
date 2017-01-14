@@ -1,3 +1,7 @@
+__author__  = 'Cichar'
+__git__     = 'https://github.com/Cichar/WYYCloud'
+__version__ = '0.1'
+
 from selenium import webdriver
 import time
 import csv
